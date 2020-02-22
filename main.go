@@ -18,16 +18,23 @@ var (
 )
 
 func main() {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=disable", host, port, user, password)
 	db, err := sql.Open("postgres", psqlInfo)
-	if err != nil {
-		panic(err)
-	}
-	err = createDB(db, dbname)
-	if err != nil {
-		panic(err)
-	}
+	must(err)
+	err = resetDB(db, dbname)
+	must(err)
 	db.Close()
+	psqlInfo = fmt.Sprintf("%s dbname=%s", psqlInfo, dbname)
+	db, err = sql.Open("postgres", psqlInfo)
+	must(err)
+	defer db.Close()
+	must(db.Ping())
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
 
 func resetDB(db *sql.DB, name string) error {
@@ -39,7 +46,7 @@ func resetDB(db *sql.DB, name string) error {
 }
 
 func createDB(db *sql.DB, name string) error {
-	_, err := db.Exec("CREATE DATABASE" + name)
+	_, err := db.Exec("CREATE DATABASE " + name)
 	if err != nil {
 		return err
 	}
